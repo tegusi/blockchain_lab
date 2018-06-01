@@ -2,6 +2,7 @@
     "files.associations": {
         "string.h": "c",
         "xinu.h": "c",
-        "shprototypes.h": "c"
+        "shprototypes.h": "c",
+        "stdio.h": "c"
     }
 }
