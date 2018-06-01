@@ -158,8 +158,20 @@ shellcmd sender(int nargs, char* args[]) {
     localip = getlocalip();
     remoteip  = NetData.ipbcast;
 
+    for(i = 0;i < MAXRECEIVER; i++){
+        recevier[i].state = 0;
+    }
+
+    machine_ips[0] = 3232235842;
+    machine_ips[1] = 3232235991;
+    machine_ips[2] = 3232235993;
+    machine_ports[0] = locport;
+    machine_ports[1] = locport;
+    machine_ports[2] = locport;
+    machine_count = 3;
+    slot = udp_register(0, 0, locport);
     while (1) {
-        slot = udp_register(0, 0, locport);
+        
         // slot = udp_register(remoteip, 988, 987);
         /*
             接收消息
@@ -223,6 +235,7 @@ shellcmd sender(int nargs, char* args[]) {
 
             for (i = 0; i < machine_count; i++) {
                 udp_sendto(slot,machine_ips[i], machine_ports[i], newmsg, strlen(newmsg));
+                kprintf("sent!!!\n");
             }
         }
         if (op == 2) {
@@ -330,8 +343,9 @@ shellcmd sender(int nargs, char* args[]) {
             }
             
         }
-        udp_release(slot);
+        
     }
+    udp_release(slot);
 }
 
 
