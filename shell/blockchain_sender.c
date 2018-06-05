@@ -156,20 +156,52 @@ shellcmd sender(int nargs, char* args[]) {
     uint32 ip1,ip2;
     int op;
     localip = getlocalip();
-    remoteip  = NetData.ipbcast;
 
     for(i = 0;i < MAXRECEIVER; i++){
         recevier[i].state = 0;
     }
+    
+    char pingbuf[20];
+    sprintf(msg,"%d_1_1",localip);
+    for(i = 0;i < 254;i++){
+        uint32 ipaddr = NetData.ipprefix + i;
+        slot = icmp_register(ipaddr);
+        if (slot == SYSERR) {
+            fprintf(stderr,"%d: ICMP registration failed\n", ipaddr);
+            continue;
+        }
+        memset(pingbuf,0,sizeof(pingbuf));
+        retval = icmp_send(ipaddr, ICMP_ECHOREQST, slot,
+					0, pingbuf, sizeof(pingbuf));
+        if (retval == SYSERR) {
+            fprintf(stderr, "%d: no response from host %d\n", localip, ipaddr);
+            icmp_release(slot);
+            continue;
+	    }
+        retval = icmp_recv(slot, pingbuf, sizeof(pingbuf), 1000);
+        icmp_release(slot);
+        if (retval == TIMEOUT) {
+            fprintf(stderr, "%d: no response from host %d\n", localip,
+                        ipaddr);
+            continue;
+        }
+        printf("IP %d found!\n",ipaddr);
+        machine_ips[machine_count] = ipaddr;
+        machine_ports[machine_count] = locport;
+        machine_count++;
+    }
 
-    machine_ips[0] = 3232235842;
-    machine_ips[1] = 3232235991;
-    machine_ips[2] = 3232235993;
-    machine_ports[0] = locport;
-    machine_ports[1] = locport;
-    machine_ports[2] = locport;
-    machine_count = 3;
+    // machine_ips[0] = 3232235842;
+    // machine_ips[1] = 3232235991;
+    // machine_ips[2] = 3232235993;
+    // machine_ports[0] = locport;
+    // machine_ports[1] = locport;
+    // machine_ports[2] = locport;
+    // machine_count = 3;
     slot = udp_register(0, 0, locport);
+    for(i = 0;i < machine_count;i++){
+        udp_sendto(slot,machine_ips[i],machine_ports[i],msg,sizeof(msg));
+    }
     while (1) {
         
         // slot = udp_register(remoteip, 988, 987);
@@ -235,7 +267,6 @@ shellcmd sender(int nargs, char* args[]) {
 
             for (i = 0; i < machine_count; i++) {
                 udp_sendto(slot,machine_ips[i], machine_ports[i], newmsg, strlen(newmsg));
-                kprintf("sent!!!\n");
             }
         }
         if (op == 2) {
